@@ -1,5 +1,5 @@
 {
-    "name": "prologuetech/big",
+    "name": "ynizon/big",
     "type": "library",
     "description": "Google BigQuery for Laravel",
     "keywords": [
@@ -10,7 +10,7 @@
         "Laravel",
         "PHP"
     ],
-    "homepage": "https://github.com/prologuetech/laravel-big",
+    "homepage": "https://github.com/ynizon/laravel-big",
     "license": "MIT",
     "authors": [
         {

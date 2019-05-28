@@ -1,13 +1,15 @@
 # Google BigQuery for Laravel
 
 This package aims to wrap laravel functionality around Google's BigQuery.
+Source: https://github.com/prologuetech/laravel-big
+Update: Add functions to convert Big Query Model to Eloquent and run bind sql query
 
 ## Install
 
 Via Composer
 
 ``` bash
-$ composer require prologuetech/big
+$ composer require ynizon/big
 ```
 
 ## Setup

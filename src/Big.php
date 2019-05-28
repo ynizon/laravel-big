@@ -84,6 +84,7 @@ class Big
         }
 
         // Mutate into a laravel collection
+		$data = array();
         foreach ($queryResults->rows() as $row) {
             $data[] = $row;
         }
@@ -295,6 +296,35 @@ class Big
         return ['fields' => static::fieldMap($fields, $structs)];
     }
 
+	/**
+     * Flip a Laravel Big Query Schemas into a Eloquent Models 
+     *
+     * @param Model $model
+     * @param array|null $results from run(SQL Query )
+     *
+     * @throws Exception
+     * @return array
+     */
+    public static function unflipModel($model, $results)
+    {
+        // Verify we have an Eloquent Model
+        if (!$model instanceof Model) {
+            throw new Exception(__METHOD__ . ' requires a Eloquent model, ' . get_class($model) . ' used.');
+        }
+
+       $data = array();
+	   foreach ($results as $result){
+		   $o = new $model();
+		   foreach ($result as $column=>$value){
+			   $o->$column = $value;
+		   }
+		   $data[] = $o;
+	   }
+	   
+	   
+        return collect($data ?? []);
+    }
+	
     /**
      * Map our fields to BigQuery compatible data types
      *
@@ -452,4 +482,88 @@ class Big
 
         return $results->first()[$field];
     }
+	
+	/**
+     * Bind data to sql query and replace table name with the correct dataset and project name
+     *
+     * @param object(Illuminate\Database\Eloquent\Builder) $query with ? for bind data
+     * @param array $tables (table name used in the query) for replacing with the correct name project+dataset+table
+     * @param int $num (numbert of items in pagination) use 0 for illimited
+	 * @param int $page (page parameter for pagination)
+	 * @param array $arrLikeFields (fields with "like queries" to replace with lower case)
+	 * 
+     * @return mixed
+	 *
+	 * Example:
+	 *  $query = Product::where("sku","=",$sku);
+	 *	$sql = $big->bindQuery($query, array("products"));
+	 *	$results = Big::unflipModel(new Product(), $big->run($sql));
+     */
+	public function bindQuery($query, $tables, $num=15, $page = 1, $arrLikeFields =[]){
+		
+		$sql = $query->toSql();
+		$bindDataArr =$query->getBindings();
+		
+		foreach($bindDataArr as $binding)
+		{
+			$value = is_numeric($binding) ? $binding : "'".$binding."'";
+			$sql = preg_replace('/\?/', $value, $sql, 1);
+		}
+		
+		foreach ($arrLikeFields as $field){
+			$sql = str_ireplace("`".$field."` LIKE","LOWER(`".$field."`) LIKE",$sql);
+		}
+		
+		$dataset = $dataset ?? $this->defaultDataset;
+		foreach ($tables as $table){
+			$sql = str_ireplace("`".$table."`","`".config('prologue-big.big.project_id').".".$dataset.".".$table."`",$sql);
+		}
+		
+		if (!isset($page)){
+			$page = 1;
+		}
+		
+		if ($num>0){
+			$sql .= " limit ".$num." offset ".($num*($page-1));
+		}
+		//echo $sql;
+		return $sql;
+	}
+	
+	/**
+     * Bind data to sql query and replace table name with the correct dataset and project name
+     *
+     * @param object(Illuminate\Database\Eloquent\Builder) $query with ? for bind data
+     * @param array $tables (table name used in the query) for replacing with the correct name project+dataset+table
+	 * @param array $arrLikeFields (fields with "like queries" to replace with lower case)
+	 * 
+     * @return mixed
+	 *
+	 * Example:
+	 *  $query = Product::where("sku","=",$sku);
+	 *	$sql = $big->bindCountQuery($query, array("products"));
+     */
+	public function bindCountQuery($query, $tables, $arrLikeFields =[]){
+		
+		$sql = $query->toSql();
+		$sql = str_ireplace("select *", "select count(*) as nb", $sql);
+		$bindDataArr =$query->getBindings();
+		
+		foreach($bindDataArr as $binding)
+		{
+			$value = is_numeric($binding) ? $binding : "'".$binding."'";
+			$sql = preg_replace('/\?/', $value, $sql, 1);
+		}
+		
+		foreach ($arrLikeFields as $field){
+			$sql = str_ireplace("`".$field."` LIKE","LOWER(`".$field."`) LIKE",$sql);
+		}
+		
+		$dataset = $dataset ?? $this->defaultDataset;
+		foreach ($tables as $table){
+			$sql = str_ireplace("`".$table."`","`".config('prologue-big.big.project_id').".".$dataset.".".$table."`",$sql);
+		}
+
+		return $sql;
+	}
 }
