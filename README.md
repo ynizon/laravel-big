@@ -107,6 +107,28 @@ $big = new Big();
 $results = $big->run($query);
 ```
 
+Example to get Eloquent model with pagination from Big Query query.
+``` php
+$products = Product::whereIn("account_id",$accounts_id);
+$arrLikeFields[] = "title";
+$products = $products->where("title","LIKE","%".$q."%");
+$sql = $big->bindCountQuery($query, array("products"), $arrLikeFields);
+
+//Get count
+$totalProducts = $big->run($sql);
+$totalProducts = $totalProducts[0]["nb"];
+
+//Get products
+$sql = $big->bindQuery($query->orderBy("updated_at"), array("products"),15, $currentPage, $arrLikeFields);
+$products = Big::unflipModel(new Product(), $big->run($sql));
+
+$url = "/";
+if (isset($_SERVER["REDIRECT_URL"])){
+	$url = $_SERVER["REDIRECT_URL"];
+}
+$products = new LengthAwarePaginator($products, $totalProducts, 15, $currentPage, ['path'=>url($url)]);
+```
+
 When using ```run``` we automatically poll BigQuery and return all results as a laravel collection object for you so you
 can enjoy your results as a refreshing cup of Laravel.
 
