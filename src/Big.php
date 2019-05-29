@@ -315,12 +315,17 @@ class Big
        $data = array();
 	   foreach ($results as $result){
 		   $o = new $model();
-		   foreach ($result as $column=>$value){
-			   $o->$column = $value;
-		   }
-		   $data[] = $o;
-	   }
-	   
+
+			foreach ($result as $column=>$value){
+				if (is_a($value, 'Google\Cloud\BigQuery\Timestamp')) {
+					$o->$column = date("Y-m-d H:i:s",strtotime($value->__toString()));
+				}else{
+					$o->$column = $value;
+				}
+			}
+
+			$data[] = $o;
+	   }	   
 	   
         return collect($data ?? []);
     }
