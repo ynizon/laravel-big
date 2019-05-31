@@ -64,10 +64,11 @@ class Big
      *
      * @param string $query
      * @param array|null $options
+	 * @param boolean $bReturn (determine if the function need to return data)
      *
      * @return \Illuminate\Support\Collection
      */
-    public function run($query, $options = null)
+    public function run($query, $options = null, $bReturn = true)
     {
         // Set default options if nothing is passed in
         $options = $options ?? $this->options;
@@ -84,12 +85,14 @@ class Big
         }
 
         // Mutate into a laravel collection
-		$data = array();
-        foreach ($queryResults->rows() as $row) {
-            $data[] = $row;
-        }
+		if ($bReturn){
+			$data = array();
+			foreach ($queryResults->rows() as $row) {
+				$data[] = $row;
+			}
 
-        return collect($data ?? []);
+			return collect($data ?? []);
+		}
     }
 
     /**
