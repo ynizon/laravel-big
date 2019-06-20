@@ -574,4 +574,21 @@ class Big
 
 		return $sql;
 	}
+	
+	/**
+	When you need to extract only the first line of a group, you can use row_number filter
+	In your request select, use "ROW_NUMBER()  OVER(PARTITION BY field)  as row_number"
+	It will generates and run a request like this:
+	Ex: select * from (
+			select `field1`, `field2`, ROW_NUMBER()  OVER(PARTITION BY field)  as `row_number` from `...` where `...
+			group by field1
+		) where row_number=1
+	*/
+	public function runByRowNumber($psql,$iRowNumber = 1){
+		$psql = str_ireplace("`ROW_NUMBER()","ROW_NUMBER()",$psql);
+		$psql = str_ireplace(")` as `row_number",") as `row_number",$psql);
+		$sql = "SELECT * from (".$psql.") where row_number=".$iRowNumber;
+		
+		return $this->run($sql);
+	}
 }
