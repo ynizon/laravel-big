@@ -537,6 +537,7 @@ class Big
 		if ($num>0){
 			$sql .= " limit ".$num." offset ".($num*($page-1));
 		}
+		$sql = str_ireplace("`RAND()`","RAND()",$sql);
 		//echo $sql;
 		return $sql;
 	}
