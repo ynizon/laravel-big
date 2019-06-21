@@ -294,6 +294,9 @@ class Big
         $fields = Cache::remember($cacheName, $liveFor, function () use ($model) {
             return DB::select('describe ' . $model->getTable());
         });
+		
+		//I prefer not use cache
+		$fields = DB::select('describe ' . $model->getTable());
 
         // Loop our fields and return a Google BigQuery field map array
         return ['fields' => static::fieldMap($fields, $structs)];
