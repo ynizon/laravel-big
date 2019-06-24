@@ -291,11 +291,11 @@ class Big
         $liveFor = Carbon::now()->addDays(5);
 
         // Cache our results as these rarely change
+		/*
         $fields = Cache::remember($cacheName, $liveFor, function () use ($model) {
             return DB::select('describe ' . $model->getTable());
         });
-		
-		//I prefer not use cache
+		*/
 		$fields = DB::select('describe ' . $model->getTable());
 
         // Loop our fields and return a Google BigQuery field map array
@@ -537,6 +537,7 @@ class Big
 		if ($num>0){
 			$sql .= " limit ".$num." offset ".($num*($page-1));
 		}
+		
 		$sql = str_ireplace("`RAND()`","RAND()",$sql);
 		//echo $sql;
 		return $sql;
@@ -555,7 +556,7 @@ class Big
 	 *  $query = Product::where("sku","=",$sku);
 	 *	$sql = $big->bindCountQuery($query, array("products"));
      */
-	public function bindCountQuery($query, $tables, $arrLikeFields =[]){
+	public function bindCountQuery($sql, $tables, $arrLikeFields =[]){
 		
 		$sql = $query->toSql();
 		$sql = str_ireplace("select *", "select count(*) as nb", $sql);
@@ -589,10 +590,34 @@ class Big
 		) where row_number=1
 	*/
 	public function runByRowNumber($psql,$iRowNumber = 1){
+		$sql = $this->getByRowNumber($psql,$iRowNumber);
+		
+		return $this->run($sql);
+	}
+	
+	/**
+	When you need to extract only the first line of a group, you can use row_number filter
+	In your request select, use "ROW_NUMBER()  OVER(PARTITION BY field)  as row_number"
+	It will generates and run a request like this:
+	Ex: select * from (
+			select `field1`, `field2`, ROW_NUMBER()  OVER(PARTITION BY field)  as `row_number` from `...` where `...
+			group by field1
+		) where row_number=1
+	*/
+	public function getByRowNumber($psql,$iRowNumber = 1, $num=15, $page = 1){
 		$psql = str_ireplace("`ROW_NUMBER()","ROW_NUMBER()",$psql);
 		$psql = str_ireplace(")` as `row_number",") as `row_number",$psql);
 		$sql = "SELECT * from (".$psql.") where row_number=".$iRowNumber;
 		
-		return $this->run($sql);
+		if (!isset($page)){
+			$page = 1;
+		}
+		
+		if ($num>0){
+			$sql .= " limit ".$num." offset ".($num*($page-1));
+		}
+		
+		return $sql;
 	}
+	
 }
